@@ -35,7 +35,11 @@ chmod 700 $HOME/.pki/nssdb
 echo 'add cac module to shared nss db'
 modutil -force -create -dbdir sql:$HOME/.pki/nssdb
 modutil -force -dbdir sql:$HOME/.pki/nssdb -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
-[ -d $HOME/snap/chromium ] && modutil -force -dbdir sql:$HOME/snap/chromium/current/.pki/nssdb -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
+if [ -d $HOME/snap/chromium ]
+then
+    modutil -force -create -dbdir sql:$HOME/snap/chromium/current/.pki/nssdb
+    modutil -force -dbdir sql:$HOME/snap/chromium/current/.pki/nssdb -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
+fi
 
 # Add CAC support to Firfox browser
 firefox --headless &
@@ -47,6 +51,7 @@ if [ -d $HOME/snap/firefox ]
 then
     for dir in $(ls -d $HOME/snap/firefox/common/.mosilla/firefox/*.default*)
     do
+        modutil -force -create -dbdir $dir
         modutil -force -dbdir $dir -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
     done
 fi
