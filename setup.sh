@@ -100,7 +100,7 @@ do
     [ -d $HOME/.mozilla/firefox ] && certutil -A -n $cert_name -t "CT,C,C" -d $HOME/.mozilla/firefox/*.default-release -i $cert
     if [ -d $HOME/snap/firefox ]
     then
-        for dir in $(ls -d $HOME/snap/firefox/common/.mosilla/firefox/*.default*)
+        for dir in $(ls -d $HOME/snap/firefox/common/.mozilla/firefox/*.default*)
         do
             certutil -A -n $cert_name -t "CT,C,C" -d $dir -i $cert
         done
