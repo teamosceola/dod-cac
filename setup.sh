@@ -49,7 +49,7 @@ echo 'add cac module to firefox'
 [ -d $HOME/.mozilla/firefox ] && modutil -force -dbdir $HOME/.mozilla/firefox/*.default-release -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
 if [ -d $HOME/snap/firefox ]
 then
-    for dir in $(ls -d $HOME/snap/firefox/common/.mosilla/firefox/*.default*)
+    for dir in $(ls -d $HOME/snap/firefox/common/.mozilla/firefox/*.default*)
     do
         modutil -force -create -dbdir $dir
         modutil -force -dbdir $dir -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
