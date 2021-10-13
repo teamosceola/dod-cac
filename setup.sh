@@ -35,13 +35,15 @@ chmod 700 $HOME/.pki/nssdb
 echo 'add cac module to shared nss db'
 modutil -force -create -dbdir sql:$HOME/.pki/nssdb
 modutil -force -dbdir sql:$HOME/.pki/nssdb -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
+[ -d $HOME/snap/chromium ] && modutil -force -dbdir sql:$HOME/snap/chromium/current/.pki/nssdb -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
 
 # Add CAC support to Firfox browser
 firefox --headless &
 sleep 3
-killall /usr/lib/firefox/firefox
+killall $(ps a | grep 'firefox --headless' | grep -v grep | sed -r 's/^.* (\/.*) .*$/\1/g')
 echo 'add cac module to firefox'
-modutil -force -dbdir $HOME/.mozilla/firefox/*.default-release -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
+[ -d $HOME/.mozilla/firefox ] && modutil -force -dbdir $HOME/.mozilla/firefox/*.default-release -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
+[ -d $HOME/snap/firefox ] && modutil -force -dbdir $HOME/snap/firefox/common/.mozilla/firefox/*.default-release -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
 
 # Download certs zip from cyber.mil / unzip / changed to extracted contents dir
 curl https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/zip/certificates_pkcs7_DoD.zip -o certificates_pkcs7_DoD.zip
@@ -81,9 +83,11 @@ do
     # Import into Chromium based browsers cert store
     echo "add $cert_name to shared nss db"
     certutil -A -n $cert_name -t "CT,C,C" -d sql:$HOME/.pki/nssdb -i $cert
+    [ -d $HOME/snap/chromium ] && certutil -A -n $cert_name -t "CT,C,C" -d sql:$HOME/snap/chromium/current/.pki/nssdb -i $cert
     # Import into Firefox browser cert store
     echo "add $cert_name to firefox"
-    certutil -A -n $cert_name -t "CT,C,C" -d $HOME/.mozilla/firefox/*.default-release -i $cert
+    [ -d $HOME/.mozilla/firefox ] && certutil -A -n $cert_name -t "CT,C,C" -d $HOME/.mozilla/firefox/*.default-release -i $cert
+    [ -d $HOME/snap/firefox ] && certutil -A -n $cert_name -t "CT,C,C" -d $HOME/snap/firefox/common/.mozilla/firefox/*.default-release -i $cert
 done
 
 # Clean-up
