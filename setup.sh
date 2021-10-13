@@ -39,11 +39,17 @@ modutil -force -dbdir sql:$HOME/.pki/nssdb -add 'CAC Module' -libfile /usr/lib/x
 
 # Add CAC support to Firfox browser
 firefox --headless &
-sleep 3
+sleep 10
 killall $(ps a | grep 'firefox --headless' | grep -v grep | sed -r 's/^.* (\/.*) .*$/\1/g')
 echo 'add cac module to firefox'
 [ -d $HOME/.mozilla/firefox ] && modutil -force -dbdir $HOME/.mozilla/firefox/*.default-release -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
-[ -d $HOME/snap/firefox ] && modutil -force -dbdir $HOME/snap/firefox/common/.mozilla/firefox/*.default-release -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
+if [ -d $HOME/snap/firefox ]
+then
+    for dir in $(ls -d $HOME/snap/firefox/common/.mosilla/firefox/*.default*)
+    do
+        modutil -force -dbdir $dir -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
+    done
+fi
 
 # Download certs zip from cyber.mil / unzip / changed to extracted contents dir
 curl https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/zip/certificates_pkcs7_DoD.zip -o certificates_pkcs7_DoD.zip
@@ -87,7 +93,13 @@ do
     # Import into Firefox browser cert store
     echo "add $cert_name to firefox"
     [ -d $HOME/.mozilla/firefox ] && certutil -A -n $cert_name -t "CT,C,C" -d $HOME/.mozilla/firefox/*.default-release -i $cert
-    [ -d $HOME/snap/firefox ] && certutil -A -n $cert_name -t "CT,C,C" -d $HOME/snap/firefox/common/.mozilla/firefox/*.default-release -i $cert
+    if [ -d $HOME/snap/firefox ]
+    then
+        for dir in $(ls -d $HOME/snap/firefox/common/.mosilla/firefox/*.default*)
+        do
+            certutil -A -n $cert_name -t "CT,C,C" -d $dir -i $cert
+        done
+    fi
 done
 
 # Clean-up
