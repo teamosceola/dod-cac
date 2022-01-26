@@ -2,10 +2,6 @@
 
 ######################################################################################################
 # Summary:                                                                                           #
-#   - Installs Microsoft Edge for Linux                                                              #
-#   - Installs Smart Card tools for Linux                                                            #
-#   - Adds CAC (Smart Card) module support to Chromium based browsers (Chrome, Edge, Chromium, etc.) #
-#   - Adds CAC (Smart Card) module support to Firefox browser                                        #
 #   - Downloads latest DoD Certificates from cyber.mil                                               #
 #   - Extracts and converts DoD certs to usable format                                               #
 #   - Imports all DoD Root and Intermediate CAs into Chromium based browsers                         #
@@ -15,62 +11,16 @@
 # *NOTE: Do NOT run script with 'sudo', run as regular user                                          #
 ######################################################################################################
 
-# install needed tools
-sudo apt install opensc libnss3-tools curl openssl -y
-
-## Setup Microsoft Edge Repo
-curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-sudo install -o root -g root -m 644 microsoft.gpg /etc/apt/trusted.gpg.d/
-sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge-beta.list'
-sudo rm microsoft.gpg
-
-## Install Microsoft Edge
-sudo apt update
-sudo apt install microsoft-edge-beta -y
-
-# Add CAC support to Chromium based browsers
-mkdir -p $HOME/.pki/nssdb
-chmod 700 $HOME/.pki
-chmod 700 $HOME/.pki/nssdb
-echo 'add cac module to shared nss db'
-modutil -force -create -dbdir sql:$HOME/.pki/nssdb
-modutil -force -dbdir sql:$HOME/.pki/nssdb -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
-if [ -d $HOME/snap/chromium ]
-then
-    modutil -force -create -dbdir sql:$HOME/snap/chromium/current/.pki/nssdb
-    modutil -force -dbdir sql:$HOME/snap/chromium/current/.pki/nssdb -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
-fi
-
-# Add CAC support to Firfox browser
-firefox --headless &
-sleep 10
-killall $(ps a | grep 'firefox --headless' | grep -v grep | sed -r 's/^.* (\/.*) .*$/\1/g')
-killall $(ps a | grep 'firefox-esr --headless' | grep -v grep | sed -r 's/^.* (\/.*) .*$/\1/g')
-echo 'add cac module to firefox'
-if [ -d $HOME/.mozilla/firefox ]
-then
-    for dir in $(ls -d $HOME/.mozilla/firefox/*.default*)
-    do
-        modutil -force -create -dbdir $dir
-        modutil -force -dbdir $dir -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
-    done
-fi
-if [ -d $HOME/snap/firefox ]
-then
-    for dir in $(ls -d $HOME/snap/firefox/common/.mozilla/firefox/*.default*)
-    do
-        modutil -force -create -dbdir $dir
-        modutil -force -dbdir $dir -add 'CAC Module' -libfile /usr/lib/x86_64-linux-gnu/pkcs11/opensc-pkcs11.so
-    done
-fi
-
 # Download certs zip from cyber.mil / unzip / changed to extracted contents dir
 curl https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/zip/certificates_pkcs7_DoD.zip -o certificates_pkcs7_DoD.zip
 unzip certificates_pkcs7_DoD.zip -d dod-certs
 pushd dod-certs/*/
 
 # Convert from .p7b to .pem (all certs are concatenated into single file)
-openssl pkcs7 -in Certificates_PKCS7_v*_DoD.pem.p7b -print_certs -out DoD_CAs.pem
+mkdir tmp
+openssl pkcs7 -in Certificates_PKCS7_v*_DoD.pem.p7b -print_certs -out tmp/DoD_CAs.pem
+pushd tmp
+
 # Remove blank lines from .pem
 sed -i '/^$/d' DoD_CAs.pem
 # Remove 'subject = ' lines from .pem
@@ -79,20 +29,35 @@ sed -i '/^subject.*$/d' DoD_CAs.pem
 sed -i '/^issuer.*$/d' DoD_CAs.pem
 
 # Split concatenated file into separate files for each individual cert
-csplit -z -f USGOV-CA- -b %02d.crt DoD_CAs.pem  '/-----BEGIN CERTIFICATE-----/' '{*}'
+csplit -z -f USGOV-CA- -b %02d.pem DoD_CAs.pem  '/-----BEGIN CERTIFICATE-----/' '{*}'
+rm DoD_CAs.pem
 
-# Rename certs to reflect the Subject CN of the cert
-for cert in $(ls USGOV-CA-*.crt)
+# Rename certs to reflect the Subject CN of the cert, replacing spaces with underscores
+for cert in $(ls USGOV-CA-*.pem)
 do
     # get cert name (i.e Suject CN)
     cert_name=$(openssl x509 -in $cert -noout -text | egrep '^.*Subject:.*$' | sed -r 's/^.*CN = (.*)$/\1/g' | sed -r 's/ /_/g')
-    mv $cert $cert_name.crt
+    mv $cert $cert_name.pem
+    cp $cert_name.pem $cert_name.crt
 done
 
-# Copy certs to system cert store (directory of files)
-sudo cp *.crt /usr/share/ca-certificates/.
-# Update system ca certs
-sudo update-ca-certificates
+# Ubuntu/Debian based
+if [ -d /usr/share/ca-certificates ]
+then
+    # Copy certs to system cert store (directory of files)
+    sudo cp *.crt /usr/share/ca-certificates/.
+    # Update system ca certs
+    sudo update-ca-certificates
+fi
+
+# Fedora/Red Hat based
+if [ -d /usr/share/pki/ca-trust-source/anchors ]
+then
+    # Copy pem's to system trust store
+    sudo cp *.pem /usr/share/pki/ca-trust-source/anchors/.
+    # Update system ca certs
+    sudo update-ca-trust
+fi
 
 # Import certs into Browser cert stores
 for cert in $(ls *.crt)
@@ -101,7 +66,7 @@ do
     cert_name=$(openssl x509 -in $cert -noout -text | egrep '^.*Subject:.*$' | sed -r 's/^.*CN = (.*)$/\1/g' | sed -r 's/ /_/g')
     # Import into Chromium based browsers cert store
     echo "add $cert_name to shared nss db"
-    certutil -A -n $cert_name -t "CT,C,C" -d sql:$HOME/.pki/nssdb -i $cert
+    [ -d $HOME/.pki/nssdb ] && certutil -A -n $cert_name -t "CT,C,C" -d sql:$HOME/.pki/nssdb -i $cert
     [ -d $HOME/snap/chromium ] && certutil -A -n $cert_name -t "CT,C,C" -d sql:$HOME/snap/chromium/current/.pki/nssdb -i $cert
     # Import into Firefox browser cert store
     echo "add $cert_name to firefox"
@@ -121,6 +86,7 @@ do
         done
     fi
 done
+popd
 
 # Clean-up
 popd

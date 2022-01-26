@@ -14,11 +14,39 @@ Configure Browsers for DoD CAC Support
 
 # Tested On
 - Ubuntu 21.04
+- Fedora 35
 
 # How-To
+
+## Ubuntu
+Install Microsoft Edge Browser, and configure for CAC support:
 >NOTE: Make sure all browser windows are closed before running
 ```
 git clone https://github.com/teamosceola/dod-cac.git
 cd dod-cac
-./setup.sh
+./ubuntu.sh
+```
+Launch the Microsoft Edge browser at least once to ensure that the nssdb database gets created, then run:
+```
+./dod-certs.sh
+```
+
+## Fedora
+Install Microsoft Edge Browser:
+```
+git clone https://github.com/teamosceola/dod-cac.git
+cd dod-cac
+./fedora.sh
+```
+Launch the Microsoft Edge browser at least once to ensure that the nssdb database gets created, then run:
+```
+./dod-certs.sh
+```
+
+## Install DOD Root/Intermediate Certificate Authorities
+Install the DOD root and intermediate CA certificates into both system trust store and browser trust stores
+```
+git clone https://github.com/teamosceola/dod-cac.git
+cd dod-cac
+./dod-certs.sh
 ```
