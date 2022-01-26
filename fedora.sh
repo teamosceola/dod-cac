@@ -8,7 +8,7 @@
 ######################################################################################################
 
 sudo dnf update --refresh -y
-sudo dnf install dnf-plugins-core -y
+sudo dnf install dnf-plugins-core unzip nss-tools openssl curl -y
 sudo dnf config-manager --add-repo https://packages.microsoft.com/yumrepos/edge -y
 sudo dnf update --refresh -y
 sudo dnf install microsoft-edge-stable -y
