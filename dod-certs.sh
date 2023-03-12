@@ -12,13 +12,13 @@
 ######################################################################################################
 
 # Download certs zip from cyber.mil / unzip / changed to extracted contents dir
-curl https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/zip/certificates_pkcs7_DoD.zip -o certificates_pkcs7_DoD.zip
-unzip certificates_pkcs7_DoD.zip -d dod-certs
+curl https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/zip/unclass-certificates_pkcs7_DoD.zip -o unclass-certificates_pkcs7_DoD.zip
+unzip unclass-certificates_pkcs7_DoD.zip -d dod-certs
 pushd dod-certs/*/
 
 # Convert from .p7b to .pem (all certs are concatenated into single file)
 mkdir tmp
-openssl pkcs7 -in Certificates_PKCS7_v*_DoD.pem.p7b -print_certs -out tmp/DoD_CAs.pem
+openssl pkcs7 -in certificates_pkcs7_v*_pem.p7b -print_certs -out tmp/DoD_CAs.pem
 pushd tmp
 
 # Remove blank lines from .pem
