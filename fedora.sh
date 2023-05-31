@@ -7,11 +7,15 @@
 # *NOTE: Do NOT run script with 'sudo', run as regular user                                          #
 ######################################################################################################
 
-sudo dnf update --refresh -y
-sudo dnf install dnf-plugins-core unzip nss-tools openssl curl -y
-sudo dnf config-manager --add-repo https://packages.microsoft.com/yumrepos/edge -y
-curl -sSL https://packages.microsoft.com/keys/microsoft.asc > ./microsoft.asc
-sudo rpm --import ./microsoft.asc
-rm ./microsoft.asc
-sudo dnf update --refresh -y
-sudo dnf install microsoft-edge-stable -y
+if [ $(which dnf | echo $?) == "0" ]
+then
+    sudo dnf update --refresh -y
+    sudo dnf install unzip nss-tools openssl curl -y
+fi
+if [ $(which rpm-ostree | echo $?) == "0" ]
+then
+    rpm-ostree install --apply-live --idempotent --allow-inactive openssl nss-tools unzip curl -y
+fi
+
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install flathub com.microsoft.Edge -y

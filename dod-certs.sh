@@ -51,10 +51,10 @@ then
 fi
 
 # Fedora/Red Hat based
-if [ -d /usr/share/pki/ca-trust-source/anchors ]
+if [ -d /etc/pki/ca-trust/source/anchors ]
 then
     # Copy pem's to system trust store
-    sudo cp *.pem /usr/share/pki/ca-trust-source/anchors/.
+    sudo cp *.pem /etc/pki/ca-trust/source/anchors/.
     # Update system ca certs
     sudo update-ca-trust
 fi
