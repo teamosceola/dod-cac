@@ -18,7 +18,7 @@ pushd dod-certs/*/
 
 # Convert from .p7b to .pem (all certs are concatenated into single file)
 mkdir tmp
-openssl pkcs7 -in certificates_pkcs7_v*_pem.p7b -print_certs -out tmp/DoD_CAs.pem
+openssl pkcs7 -in certificates_pkcs7_v*_dod_der.p7b -inform der -print_certs -out tmp/DoD_CAs.pem -outform pem
 pushd tmp
 
 # Remove blank lines from .pem
