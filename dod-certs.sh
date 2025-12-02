@@ -9,6 +9,7 @@
 #   - Imports all DoD Root and Intermediate CAs into base OS cert store                              #
 #                                                                                                    #
 # *NOTE: Do NOT run script with 'sudo', run as regular user                                          #
+#        Also, remove your CAC before running                                                        #
 ######################################################################################################
 
 # Download certs zip from cyber.mil / unzip / changed to extracted contents dir
@@ -18,7 +19,7 @@ pushd dod-certs/*/
 
 # Convert from .p7b to .pem (all certs are concatenated into single file)
 mkdir tmp
-openssl pkcs7 -in certificates_pkcs7_v*_dod_der.p7b -inform der -print_certs -out tmp/DoD_CAs.pem -outform pem
+openssl pkcs7 -in $(ls *der.p7b | grep -iv root) -inform der -print_certs -out tmp/DoD_CAs.pem -outform pem
 pushd tmp
 
 # Remove blank lines from .pem
